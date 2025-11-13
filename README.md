@@ -48,7 +48,11 @@ The evidence is here. The question is whether you’ll see through the story or 
 ### Starting Point – Identifying the Initial System
 
 **Objective:**
-Determine where to begin hunting based on provided indicators such as HR related stuffs or tools were recently touched...over the mid-july weekends.
+Locate the machine that was compromised. Our clues that this was in early October gave us a place to begin searching. From there, we needed to locate any suspicious activity, and I began by searching for suspicious downloads. This led me to a firefox installer that was done silently and it set up some alarm bells.
+
+
+
+
 
 **Host of Interest (Starting Point):** `nathan-iel-vm`  
 **Why:** HR tooling/scripts activity on July 18th; anchor of suspicious operations.
