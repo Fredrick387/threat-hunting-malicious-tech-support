@@ -74,9 +74,9 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 1 – Initial PowerShell Execution Detection**  
-🎯 **Objective:** Pinpoint the earliest suspicious PowerShell activity that marks the intruder's possible entry.  
-📌 **Finding (answer):** **2025-07-19T02:07:43.9041721Z**  
+🚩 **Flag 1 – Initial Execution Detection**  
+🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point. 
+📌 **Finding (answer):** **10/9/2025, 12:22:27.658 PM**  
 🔍 **Evidence:**  
 - **Host:** nathan-iel-vm  
 - **Timestamp:** 2025-07-18 ~02:07:42Z (console), earliest creation at **2025-07-19T02:07:43.9041721Z**  
@@ -87,11 +87,12 @@ DeviceProcessEvents
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "who"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
-```
-<img width="528" height="313" alt="Screenshot 2025-08-17 213848" src="https://github.com/user-attachments/assets/529a90cb-083e-43b8-a0ad-85aa9ed5a3b2" />
+| where TimeGenerated between (datetime(2025-10-01) .. datetime(2025-10-15))
+| where DeviceName == "gab-intern-vm"
+| project TimeGenerated, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessFolderPath
+
+<img width="1564" height="835" alt="image" src="https://github.com/user-attachments/assets/010a7621-0963-4be4-8b77-c5b6c2ef3432" />
+
 
 
 ---
