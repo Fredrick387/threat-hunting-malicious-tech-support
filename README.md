@@ -54,18 +54,18 @@ Locate the machine that was compromised. Our clues that this was in early Octobe
 
 
 
-**Host of Interest (Starting Point):** `nathan-iel-vm`  
-**Why:** HR tooling/scripts activity on July 18th; anchor of suspicious operations.
+**Host of Interest (Starting Point):** `gab-intern-vm`  
+**Why:** Execution policy Bypass on powershell command from "Support"
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-01) .. datetime(2025-07-31))
-| where ProcessCommandLine contains "HR"
-| where ProcessCommandLine contains "tool"
-| summarize Count = count() by DeviceName
-| sort by Count desc
+| where TimeGenerated between (datetime(2025-10-01) .. datetime(2025-10-15))
+| where ProcessCommandLine contains "tool" or ProcessCommandLine contains "support" or ProcessCommandLine contains "plan" or ProcessCommandLine contains "help"
+| where ProcessCommandLine contains "Downloads" or ProcessCommandLine contains "download"
+| project TimeGenerated, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessFolderPath
 ```
-<img width="428" height="258" alt="Screenshot 2025-08-17 213533" src="https://github.com/user-attachments/assets/116cd420-68e4-4dc7-8b44-fcb2d85bf242" />
+<img width="1514" height="719" alt="image" src="https://github.com/user-attachments/assets/ff574b68-7e5f-4d83-a284-0e3aed77cf24" />
+
 
 
 ---
