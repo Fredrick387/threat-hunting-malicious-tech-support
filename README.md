@@ -119,7 +119,7 @@ DeviceFileEvents
 🚩 **Flag 3 – Quick Data Probe**  
 🎯 **Objective:** Spot brief, opportunistic checks for available sensitive content.  
 📌 **Finding (answer):** "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
-🔍 **Evidence:**  
+🔍 **Evidence:**
 - **Host:** gab-intern-vm
 - **Timestamp:** 2025-10-09T12:50:39.955931Z
 - **Process:**  
@@ -139,22 +139,24 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 4 – Active Session Discovery**  
-🎯 **Objective:** Reveal which sessions are currently active for potential masking.  
-📌 **Finding (answer):** `qwinsta.exe`  
+🚩 **Flag 4 – Host Context Recon**  
+🎯 **Objective:** Find activity that gathers basic host and user context to inform follow-up actions. 
+📌 **Finding (answer):** 2025-10-09T12:51:44.3425653Z
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** ~2025-07-18T02:17:29Z  
+- **Host:** gab-intern-vm  
+- **Timestamp:**  2025-10-09T12:51:44.3425653Z
 - **Process:** `"powershell.exe" qwinsta` → spawned **qwinsta.exe**  
-💡 **Why it matters:** Live session enumeration enables “ride‑along” with existing users to reduce new‑logon noise and increase stealth.
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "qwinsta"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "qwi"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 ```
-<img width="729" height="610" alt="Screenshot 2025-08-17 214913" src="https://github.com/user-attachments/assets/ddd32254-a7d9-4e9c-b4be-c854593f3378" />
+<img width="1528" height="469" alt="image" src="https://github.com/user-attachments/assets/a19e818e-c493-4be2-9c22-62de6dbbfa0d" />
+
 
 ---
 
