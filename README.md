@@ -182,25 +182,24 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 6 – Defender Policy Modification**  
-🎯 **Objective:** Validate if core system protection settings were modified.  
-📌 **Finding (answer):** **DisableAntiSpyware** (registry value name)  
+🚩 **Flag 6 – Connectivity & Name Resolution Check**  
+🎯 **Objective:** Identify checks that validate network reachability and name resolution.  
+📌 **Finding (answer):**  RuntimeBroker.exe
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T14:38:21Z  
-- **ActionType:** RegistryValueSet  
-- **RegistryKey:** `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender`  
-- **RegistryValueName:** `DisableAntiSpyware` → **1**  
-💡 **Why it matters:** Weakens baseline protections at policy level; corroborates defense evasion.
+- **Host:**   
+- **Timestamps:** 2025-10-09T12:55:05.7658713Z
+- **Process:**  
+- **CommandLine:**  "powershell.exe" 
+💡 **Why it matters:**
 **KQL Query Used:**
 ```
-DeviceRegistryEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ActionType == "RegistryValueSet"
-| project Timestamp, DeviceName, ActionType, RegistryKey, RegistryValueName, RegistryValueData, PreviousRegistryKey, PreviousRegistryValueData, PreviousRegistryValueName
+DeviceNetworkEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| project TimeGenerated, DeviceName, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
 ```
-<img width="868" height="792" alt="Screenshot 2025-08-17 220703" src="https://github.com/user-attachments/assets/3a95118b-7155-43a7-a5cb-2cbc0bd0a090" />
+<img width="1508" height="528" alt="image" src="https://github.com/user-attachments/assets/b37ee5f7-5e43-4c42-9a28-bf3ff4603055" />
+
 
 ---
 
