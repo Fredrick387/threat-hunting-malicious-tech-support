@@ -28,7 +28,7 @@ The evidence is here. The question is whether you’ll see through the story or 
 
 | **Time (UTC)**           | **Flag** | **Action Observed**                          | **Key Evidence**                                        |
 | ------------------------ | -------- | -------------------------------------------- | ------------------------------------------------------- |
-| **2025-10-09T13:13:12Z** | Flag 1   | Malicious file created (`HRToolTracker.ps1`) | File dropped via PowerShell                             |
+| **2025-10-09T13:13:12Z** | Flag 1   | Malicious file created (`Supporttool.ps1`)   | File dropped via PowerShell                             |
 | **2025-10-09T12:34:59Z** | Flag 2   | Initial execution of staging script          | PowerShell running HR script                            |
 | **2025-10-09T12:50:39Z** | Flag 3   | User token impersonation attempt             | Suspicious use of `runas`                               |
 | **2025-07-18T04:19:53Z** | Flag 4   | Reconnaissance of accounts & groups          | `net user /domain`                                      |
