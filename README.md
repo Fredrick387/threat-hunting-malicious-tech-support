@@ -203,29 +203,29 @@ DeviceNetworkEvents
 
 ---
 
-🚩 **Flag 7 – Access to Credential-Rich Memory Space**  
-🎯 **Objective:** Identify if the attacker dumped memory content from a sensitive process.  
-📌 **Finding (answer):** HR-related dump file disguise = **HRConfig.json**  
+🚩 **Flag 7 – Interactive Session Discovery**  
+🎯 **Objective:** Reveal to detect interactive or active user sessions on the host.  
+📌 **Finding (answer):  2533274790397065
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamps:** 2025-07-18T15:10:47Z & 15:12:27Z  
-- **Process:** `rundll32.exe`  
-- **CommandLines:**  
-  - `"rundll32.exe" C:\Windows\System32\comsvcs.dll, MiniDump 7784 C:\HRTools\HRConfig.json full`  
-  - `"rundll32.exe" C:\Windows\System32\comsvcs.dll, MiniDump 716 C:\HRTools\HRConfig.json full`  
-- **Initiating:** powershell.exe  
-- **SHA256:** `076592ca1957f8357cc201f0015072c612f5770ad7de85f87f254253c754dd7`  
-💡 **Why it matters:** comsvcs.dll MiniDump likely targeted LSASS; output masked as HR config to blend with business activity.
+- **Host:** 
+- **Timestamps:**  2025-10-09T12:52:14.3135459Z
+- **Process:**   
+- **CommandLines:**  "cmd.exe" /c whoami /groups
+- **Initiating:** 
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "Dump"
-| project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "who"
+| where ProcessCommandLine !contains "msedge"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
 
 ```
-<img width="879" height="567" alt="Screenshot 2025-08-17 221121" src="https://github.com/user-attachments/assets/1c15856c-3250-4f8d-ad99-5cc96f053f63" />
+<img width="1478" height="481" alt="image" src="https://github.com/user-attachments/assets/151b4586-33c8-4262-8e53-42aea244c743" />
+
+
 
 ---
 
