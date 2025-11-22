@@ -76,7 +76,7 @@ DeviceProcessEvents
 
 🚩 **Flag 1 – Initial Execution Detection**  
 🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point. 
-📌 **Finding (answer):**   
+📌 **Finding (answer):** -ExecutionPolicy
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm  
 - **Timestamp:** 2025-10-09T13:13:12.5263837Z  
@@ -96,23 +96,23 @@ DeviceProcessEvents
 ---
 
 
-🚩 **Flag 2 – Local Account Assessment**  
-🎯 **Objective:** Map user accounts and privileges available on the system.  
-📌 **Finding (answer):** `SHA256 = 9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
+🚩 **Flag 2 – Defense Disabling**  
+🎯 **Objective:** Identify indicators that suggest to imply or simulate changing security posture.  
+📌 **Finding (answer):** DefenderTamperArtifact.lnk  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T02:07:42Z  
-- **Process:** `"powershell.exe" whoami /all`  
-- **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
-💡 **Why it matters:** `whoami /all` reveals group memberships/privileges; classic recon to plan escalation.
+- **Host:** gab-intern-vm
+- **Timestamp:** 2025-10-09T12:34:59.1260624Z
+- **Process:**  Explorer.EXE 
+💡 **Why it matters:** `
 **KQL Query Used:**
 ```
-DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "who"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+DeviceFileEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where FileName contains "artifact" or FileName contains "tamper"
+| project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessFileName, Type
 ```
-<img width="824" height="264" alt="Screenshot 2025-08-17 215913" src="https://github.com/user-attachments/assets/166aa43f-47b0-4dba-8cd1-8dd7bf413c37" />
+<img width="1498" height="206" alt="image" src="https://github.com/user-attachments/assets/3f5f4c3c-4220-47bf-94e7-3491d7ff7618" />
+
 
 ---
 
