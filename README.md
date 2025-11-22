@@ -274,24 +274,24 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 10 – Covert Data Transfer**  
-🎯 **Objective:** Uncover evidence of internal data leaving the environment.  
-📌 **Finding (answer):** Last unusual outbound connection → **52.54.13.125**  
+🚩 **Flag 10 – Proof-of-Access & Egress Validation**  
+🎯 **Objective:** Find actions that both validate outbound reachability and try to capture host state for exfiltration value. 
+📌 **Finding (answer):** www.msftconnecttest.com
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm · **ActionType:** ConnectionSuccess  
-- **RemoteUrl:** `eo7j1sn715wkekj.m.pipedream.net`  
-- **Sequence:** 52.55.234.111 → **52.54.13.125** (last at 2025-07-18T15:28:44Z)  
-💡 **Why it matters:** Validates egress path to external service consistent with data staging/exfil.
+- **Host:**  
+- **RemoteUrl:** www.msftconnecttest.com
+- **Sequence:**  
+💡 **Why it matters:**
 **KQL Query Used:**
 ```
 DeviceNetworkEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where RemoteUrl !~ ""
-| where RemoteUrl contains "pipedream.net"
-| project Timestamp, DeviceName, ActionType, RemoteIP, RemoteUrl
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
+| order by TimeGenerated asc
 ```
-<img width="492" height="411" alt="Screenshot 2025-08-17 221959" src="https://github.com/user-attachments/assets/3497fc89-96b0-4dff-955d-1ef4930d7e02" />
+<img width="1514" height="521" alt="image" src="https://github.com/user-attachments/assets/9fcaa3ee-2942-4f95-9aa5-6db7a68d6360" />
+
 
 
 ---
