@@ -229,45 +229,48 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 8 – File Inspection of Dumped Artifacts**  
-🎯 **Objective:** Detect whether memory dump contents were reviewed post‑collection.  
-📌 **Finding (answer):** `"notepad.exe" C:\HRTools\HRConfig.json`  
+🚩 **Flag 8 – Runtime Application Inventory**  
+🎯 **Objective:** Detection of running applications and services to informance and opportunity. 
+📌 **Finding (answer):** tasklist.exe  
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T15:13:16Z  
-- **Process:** notepad.exe (initiated by powershell.exe)  
-- **SHA256:** `da5807bb0997ccb5132950ec87eda2b33b1ac4533cf17a22a6f3b576ed7c5b`  
-💡 **Why it matters:** Confirms post‑dump review/validation of harvested credentials or secrets.
+- **Host:** 
+- **Timestamp:** 2025-10-09T12:51:57.6866149Z
+- **Process:** "cmd.exe" /c tasklist /v 
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "HRConfig.json"
-| project Timestamp, DeviceId, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "list"
+| where ProcessCommandLine !contains "msedge"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
 ```
-<img width="760" height="268" alt="Screenshot 2025-08-17 221257" src="https://github.com/user-attachments/assets/cd60c854-428b-4fde-aa35-a48941216c7e" />
+<img width="1495" height="134" alt="image" src="https://github.com/user-attachments/assets/56a12ed1-16b3-4c1d-adc6-1edf3b8ad89e" />
+
 
 ---
 
-🚩 **Flag 9 – Outbound Communication Test**  
-🎯 **Objective:** Catch network activity establishing contact outside the environment.  
-📌 **Finding (answer):** **.net** (TLD of unusual outbound domain)  
+🚩 **Flag 9 – Privilege Surface Check**  
+🎯 **Objective:** Detection to understand privileges available to the current actor.  
+📌 **Finding (answer):** 2025-10-09T12:52:14.3135459Z
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Suspicious Domain:** `eo7j1sn715wkekj.m.pipedream.net` (amid mostly Microsoft `*.msedge.net`/`*.azureedge.net`)  
-💡 **Why it matters:** Non‑standard webhook/C2 infrastructure used as low‑profile beacon prior to exfiltration.
+- **Host:** 
+- **Timestamp:** 2025-10-09T12:52:14.3135459Z
+- **Process:** "cmd.exe" /c whoami /groups 
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
-DeviceNetworkEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where RemoteUrl != ""
-| where RemoteUrl !contains ".com"
-| summarize Count = count() by RemoteUrl
-| sort by Count desc
+DeviceProcessEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "who"
+| where ProcessCommandLine !contains "msedge"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
+| order by TimeGenerated asc
 ```
-<img width="498" height="575" alt="Screenshot 2025-08-17 221558" src="https://github.com/user-attachments/assets/ff3a81e7-bcd1-43fb-a85c-169e54aeb922" />
+<img width="1506" height="431" alt="image" src="https://github.com/user-attachments/assets/57e54742-5a17-4128-a050-1ccb50954623" />
+
 
 ---
 
