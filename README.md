@@ -342,23 +342,21 @@ DeviceNetworkEvents
 
 🚩 **Flag 13 – Scheduled Re-Execution Persistence**  
 🎯 **Objective:** Detection creation of mechanisms that ensure the actor’s tooling runs again on reuse or sign-in. 
-📌 **Finding (answer):** **SHA1 = 65a5195e9a36b6ce73fdb40d744e0a97f0aa1d34**  
+📌 **Finding (answer):**  SupportToolUpdater
 🔍 **Evidence:**  
-- **File:** `PromotionCandidates.csv`  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18 16:14:36 (first **FileModified**)  
-- **Path:** `C:\HRTools\PromotionCandidates.csv`  
-- **Initiating:** `"NOTEPAD.EXE" C:\HRTools\PromotionCandidates.csv`  
-💡 **Why it matters:** Confirms direct manipulation of structured HR data driving promotion decisions.
+- **Command:**  "schtasks.exe" /Create /SC ONLOGON /TN SupportToolUpdater /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"" /RL LIMITED /F 
+- **Host:**  
+- **Timestamp:** 2025-10-09T13:01:28.7700443Z
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
-DeviceFileEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where FolderPath contains "HR"
-| summarize Count = count() by FileName
-| sort by Count desc
-
+DeviceProcessEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "sch"
+| where ProcessCommandLine !contains "msedge"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
+| order by TimeGenerated asc
 ```
 <img width="495" height="468" alt="Screenshot 2025-08-17 223219" src="https://github.com/user-attachments/assets/ce206008-93b6-48c1-a99c-2868db039031" />
 
@@ -371,7 +369,8 @@ DeviceFileEvents
 | project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA1, InitiatingProcessCommandLine
 
 ```
-<img width="1880" height="433" alt="Screenshot 2025-08-17 223349" src="https://github.com/user-attachments/assets/f31b2be7-75d2-4dac-b491-8006c9f342b4" />
+<img width="1497" height="330" alt="image" src="https://github.com/user-attachments/assets/a5f2c7e2-8561-4d29-9ca8-618f059d0f52" />
+
 
 
 ---
