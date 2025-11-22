@@ -360,62 +360,45 @@ DeviceProcessEvents
 ```
 <img width="495" height="468" alt="Screenshot 2025-08-17 223219" src="https://github.com/user-attachments/assets/ce206008-93b6-48c1-a99c-2868db039031" />
 
-**KQL Query Used:**
-```
-DeviceFileEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where FileName == "PromotionCandidates.csv"
-| project Timestamp, DeviceName, ActionType, FileName, FolderPath, SHA1, InitiatingProcessCommandLine
+---
 
-```
-<img width="1497" height="330" alt="image" src="https://github.com/user-attachments/assets/a5f2c7e2-8561-4d29-9ca8-618f059d0f52" />
+🚩 **Flag 14 – Autorun Fallback Persistence**  
+🎯 **Objective:** Spot lightweight autorun entries placed as backup persistence in user scope.  
+📌 **Finding (answer):** RemoteAssistUpdater
+🔍 **Evidence:**  
+- **Host:**
+- **Timestamp:** 
+- **Process:** 
+- **Command:**  
+ 
+💡 **Why it matters:**
+**KQL Query Used:**
+
+
 
 
 
 ---
 
-🚩 **Flag 14 – Audit Trail Disruption**  
-🎯 **Objective:** Detect attempts to impair system forensics.  
-📌 **Finding (answer):** **2025-07-19T05:38:55.6800388Z** (first log‑clear attempt)  
+🚩 **Flag 15 – Planted Narrative / Cover Artifact**  
+🎯 **Objective:** Identify a narrative or explanatory artifact intended to justify the activity..  
+📌 **Finding (answer):** * SupportChat_log.lnk 
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Process:** `wevtutil.exe`  
-- **Command:** `"wevtutil.exe" cl Security` (+ additional clears shortly after)  
-- **SHA256:** `0b732d9ad576d1400db44edf3e750849ac481e9bbaa628a3914e5eef9b7181b0`  
-💡 **Why it matters:** Clear Windows Event Logs → destroys historical telemetry; classic anti‑forensics.
-**KQL Query Used:**
-```
-DeviceProcessEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "wevtutil"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
-```
-<img width="1263" height="773" alt="Screenshot 2025-08-17 223624" src="https://github.com/user-attachments/assets/af5db852-e1c5-4ff3-8919-aef0a6baa225" />
-
-
-
----
-
-🚩 **Flag 15 – Final Cleanup and Exit Prep**  
-🎯 **Objective:** Capture the combination of anti‑forensics actions signaling attacker exit.  
-📌 **Finding (answer):** **2025-07-19T06:18:38.6841044Z**  
-🔍 **Evidence:**  
-- **File:** `EmptySysmonConfig.xml`  
-- **Path:** `C:\Temp\EmptySysmonConfig.xml`  
-- **Host:** nathan-iel-vm · **Initiating:** powershell.exe  
-💡 **Why it matters:** Blinds Sysmon to suppress detection just prior to exit; ties off anti‑forensics chain.
+- **File:** 
+- **Timestamp:** 2025-10-09T13:02:41.5698148Z
+- **Process:** "NOTEPAD.EXE" C:\Users\g4bri3lintern\Downloads\SupportChat_log.txt  
+- **Host:** · **Initiating:** 
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
 DeviceFileEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where FileName in ("ConsoleHost_history.txt","EmptySysmonConfig.xml","HRConfig.json")
-| sort by Timestamp desc
-| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where FileName contains "support"
+| project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessFileName, Type
 ```
-<img width="445" height="233" alt="Screenshot 2025-08-17 224226" src="https://github.com/user-attachments/assets/6334babb-6839-4281-b025-74346f5623e9" />
+<img width="1508" height="294" alt="image" src="https://github.com/user-attachments/assets/359e2ae3-d3e1-42a5-a84e-35e7d4d4bbad" />
+
 
 
 ---
