@@ -28,7 +28,7 @@ The evidence is here. The question is whether you’ll see through the story or 
 
 | **Time (UTC)**           | **Flag** | **Action Observed**                          | **Key Evidence**                                        |
 | ------------------------ | -------- | -------------------------------------------- | ------------------------------------------------------- |
-| **2025-07-18T01:14:15Z** | Flag 1   | Malicious file created (`HRToolTracker.ps1`) | File dropped via PowerShell                             |
+| **2025-10-09T13:13:12.5263837Z** | Flag 1   | Malicious file created (`HRToolTracker.ps1`) | File dropped via PowerShell                             |
 | **2025-07-18T02:43:07Z** | Flag 2   | Initial execution of staging script          | PowerShell running HR script                            |
 | **2025-07-18T03:11:42Z** | Flag 3   | User token impersonation attempt             | Suspicious use of `runas`                               |
 | **2025-07-18T04:19:53Z** | Flag 4   | Reconnaissance of accounts & groups          | `net user /domain`                                      |
@@ -76,26 +76,25 @@ DeviceProcessEvents
 
 🚩 **Flag 1 – Initial Execution Detection**  
 🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point. 
-📌 **Finding (answer):** **10/9/2025, 12:22:27.658 PM**  
+📌 **Finding (answer):**   
 🔍 **Evidence:**  
 - **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18 ~02:07:42Z (console), earliest creation at **2025-07-19T02:07:43.9041721Z**  
-- **Process:** powershell.exe → `whoami.exe /all`  
-- **CommandLine:** `"powershell.exe" whoami /all`  
-- **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
-💡 **Why it matters:** Establishes the first malicious PowerShell usage to enumerate identity/privileges, anchoring the intrusion timeline.
+- **Timestamp:** 2025-10-09T13:13:12.5263837Z  
+- **Process:** 
+- **CommandLine:** `"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"`   
+💡 **Why it matters:**
+
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where TimeGenerated between (datetime(2025-10-01) .. datetime(2025-10-15))
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
 | where DeviceName == "gab-intern-vm"
-| project TimeGenerated, DeviceName, InitiatingProcessFileName, ProcessCommandLine, InitiatingProcessFolderPath
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 
-<img width="1564" height="835" alt="image" src="https://github.com/user-attachments/assets/010a7621-0963-4be4-8b77-c5b6c2ef3432" />
-
-
+<img width="1513" height="483" alt="image" src="https://github.com/user-attachments/assets/71eae36c-65ec-4bf8-898d-618304e7fedd" />
 
 ---
+
 
 🚩 **Flag 2 – Local Account Assessment**  
 🎯 **Objective:** Map user accounts and privileges available on the system.  
