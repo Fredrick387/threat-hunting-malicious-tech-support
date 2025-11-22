@@ -160,24 +160,25 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 5 – Defender Configuration Recon**  
-🎯 **Objective:** Expose tampering or inspection of AV defenses, disguised under HR activity.  
-📌 **Finding (answer):** `"powershell.exe" -Command "Set-MpPreference -DisableRealtimeMonitoring $true"`  
+🚩 **Flag 5 – Storage Surface Mapping**  
+🎯 **Objective:** Detection of local or network storage locations that might hold interesting data. 
+📌 **Finding (answer):** "cmd.exe" /c wmic logicaldisk get name,freespace,size 
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamps:** 2025-07-18T14:58:41Z and 2025-07-18T15:00:06Z  
-- **Process:** powershell.exe  
-- **CommandLine:** `Set-MpPreference -DisableRealtimeMonitoring $true`  
-- **SHA256:** `9785001b0dcf755eddb8af294a373c0b87b2498660f724e76c4d53f9c217c7a3`  
-💡 **Why it matters:** Disables Defender’s real‑time protection to permit payload staging/credential theft with reduced detection.
+- **Host:**   
+- **Timestamps:** 2025-10-09T12:51:18.3848072Z
+- **Process:**  "cmd.exe" /c wmic logicaldisk get name,freespace,size 
+- **CommandLine:** "cmd.exe" /c wmic logicaldisk get name,freespace,size   
+💡 **Why it matters:**
 **KQL Query Used:**
 ```
 DeviceProcessEvents
-| where DeviceName contains "nathan-iel-vm"
-| where ProcessCommandLine contains "RealTimeMonitoring"
-| project Timestamp, DeviceName, FileName, ProcessCommandLine, ProcessCreationTime,InitiatingProcessCommandLine , InitiatingProcessCreationTime, SHA256
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "disk"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 ```
-<img width="797" height="613" alt="Screenshot 2025-08-17 220314" src="https://github.com/user-attachments/assets/5aafbc90-ff20-4695-bc12-d6e5ae757ab4" />
+<img width="1520" height="226" alt="image" src="https://github.com/user-attachments/assets/992f424c-b41c-487f-af40-3885ea3591c7" />
+
 
 ---
 
