@@ -78,7 +78,7 @@ DeviceProcessEvents
 🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point. 
 📌 **Finding (answer):**   
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
+- **Host:** gab-intern-vm  
 - **Timestamp:** 2025-10-09T13:13:12.5263837Z  
 - **Process:** 
 - **CommandLine:** `"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"`   
@@ -90,7 +90,7 @@ DeviceProcessEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
 | where DeviceName == "gab-intern-vm"
 | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
-
+```
 <img width="1513" height="483" alt="image" src="https://github.com/user-attachments/assets/71eae36c-65ec-4bf8-898d-618304e7fedd" />
 
 ---
