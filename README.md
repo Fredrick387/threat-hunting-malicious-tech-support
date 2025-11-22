@@ -290,7 +290,8 @@ DeviceNetworkEvents
 | project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
 | order by TimeGenerated asc
 ```
-<img width="1514" height="521" alt="image" src="https://github.com/user-attachments/assets/9fcaa3ee-2942-4f95-9aa5-6db7a68d6360" />
+<img width="1481" height="514" alt="image" src="https://github.com/user-attachments/assets/1c0f22ed-82d7-404f-8333-5cd4fdf304a6" />
+
 
 
 
