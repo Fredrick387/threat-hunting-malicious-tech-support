@@ -297,51 +297,51 @@ DeviceNetworkEvents
 
 ---
 
-🚩 **Flag 11 – Persistence via Local Scripting**  
-🎯 **Objective:** Verify if unauthorized persistence was established via legacy tooling.  
-📌 **Finding (answer):** File name tied to Run‑key value = **OnboardTracker.ps1**  
+🚩 **Flag 11 – Bundling / Staging Artifacts**  
+🎯 **Objective:** Detection of artifacts into a single location or package for transfer. 
+📌 **Finding (answer):** ReconArtifacts.zip
 🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Timestamp:** 2025-07-18T15:50:36Z  
-- **Registry:** `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`  
-- **Value Name:** `HRToolTracker` → **C:\HRTools\LegacyAutomation\OnboardTracker.ps1**  
-- **Initiating Process:** PowerShell `New-ItemProperty ... -Force`  
-💡 **Why it matters:** Ensures re‑execution at logon; disguised as HR “Onboarding” tool.
+- **Host:** 
+- **Timestamp:**  2025-10-09T12:58:17.4364257Z
+- **Initiating Process:** "powershell.exe" 
+💡 **Why it matters:** 
 **KQL Query Used:**
 ```
-DeviceRegistryEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| where InitiatingProcessCommandLine contains "-c"
-| project Timestamp, DeviceName, ActionType, RegistryKey, RegistryValueName, RegistryValueData, InitiatingProcessCommandLine
+DeviceFileEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where FileName contains "artifact" or FileName contains "tamper"
+| project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessFileName, Type
 ```
-<img width="1643" height="231" alt="Screenshot 2025-08-17 222159" src="https://github.com/user-attachments/assets/2b76f134-956d-448c-8c57-c8c55a5bfc73" />
-
----
-
-🚩 **Flag 12 – Targeted File Reuse / Access**  
-🎯 **Objective:** Surface the document that stood out in the attack sequence.  
-📌 **Finding (answer):** **Carlos Tanaka**  
-🔍 **Evidence:**  
-- **Host:** nathan-iel-vm  
-- **Repeated Access:** `Carlos.Tanaka-Evaluation.lnk` (count = 3) within HR artifacts list  
-💡 **Why it matters:** Personnel record of focus; aligns with promotion‑manipulation motive.
-**KQL Query Used:**
-```
-DeviceEvents
-| where Timestamp between (datetime(2025-07-18) .. datetime(2025-07-31))
-| where DeviceName contains "nathan-iel-vm"
-| summarize Count = count() by FileName
-| sort by Count desc
-```
-<img width="434" height="767" alt="Screenshot 2025-08-17 222304" src="https://github.com/user-attachments/assets/273f916d-e5fe-40dc-924f-802f9724ebc7" />
-
+<img width="1496" height="166" alt="image" src="https://github.com/user-attachments/assets/38cf4fd4-9006-4d01-a263-6dd209db05eb" />
 
 
 ---
 
-🚩 **Flag 13 – Candidate List Manipulation**  
-🎯 **Objective:** Trace tampering with promotion‑related data.  
+🚩 **Flag 12 – Outbound Transfer Attempt (Simulated)**  
+🎯 **Objective:** Identify to move data off-host or test upload capability.
+📌 **Finding (answer):** 100.29.147.161
+🔍 **Evidence:**  
+- **Host:** 
+- **Timestamp:** 2025-10-09T13:00:40.045127Z
+- **Process:** "powershell.exe"
+💡 **Why it matters:** 
+**KQL Query Used:**
+```
+DeviceNetworkEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
+| order by TimeGenerated asc
+```
+<img width="1486" height="315" alt="image" src="https://github.com/user-attachments/assets/5ce1c7f2-bcc2-44ad-b4ec-0e094e5b76bf" />
+
+
+
+
+---
+
+🚩 **Flag 13 – Scheduled Re-Execution Persistence**  
+🎯 **Objective:** Detection creation of mechanisms that ensure the actor’s tooling runs again on reuse or sign-in. 
 📌 **Finding (answer):** **SHA1 = 65a5195e9a36b6ce73fdb40d744e0a97f0aa1d34**  
 🔍 **Evidence:**  
 - **File:** `PromotionCandidates.csv`  
