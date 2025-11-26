@@ -80,12 +80,11 @@ DeviceProcessEvents
 🚩 **Flag 1 – Initial Execution Detection**  
 🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point. 
 📌 **Finding (answer):** -ExecutionPolicy
-🔍 **Evidence:**  
-- **Host:** gab-intern-vm  
-- **Timestamp:** 2025-10-09T13:13:12.5263837Z  
-- **Process:** 
-- **CommandLine:** `"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"`
-
+- Host: gab-intern-vm
+- Timestamp: 2025-10-09T13:13:12.5263837Z
+- Process: powershell.exe
+- Parent Process: explorer.exe (user double-click)
+- CommandLine: "powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"
 
 💡 **Why it matters:**  
 The observed PowerShell command line explicitly uses the **-ExecutionPolicy Bypass** switch to force execution of **SupportTool.ps1** regardless of the system’s configured PowerShell execution policy (which is normally set to restrict or block unsigned scripts).  
@@ -115,12 +114,15 @@ DeviceProcessEvents
 
 
 🚩 **Flag 2 – Defense Disabling**  
+
 🎯 **Objective:** Identify indicators that suggest to imply or simulate changing security posture.  
 📌 **Finding (answer):** DefenderTamperArtifact.lnk  
-🔍 **Evidence:**  
-- **Host:** gab-intern-vm
-- **Timestamp:** 2025-10-09T12:34:59.1260624Z
-- **Process:**  Explorer.EXE
+🔍 Evidence:
+- Host: gab-intern-vm
+- Timestamp: 2025-10-09T12:34:59.1260624Z
+- Process: explorer.exe → DefenderTamperArtifact.lnk
+- Parent Process: explorer.exe
+- CommandLine: "C:\Users\g4bri3lintern\Downloads\DefenderTamperArtifact.lnk"
 
 
 -💡 **Why it matters:**  
@@ -150,13 +152,15 @@ DeviceFileEvents
 ---
 
 🚩 **Flag 3 – Quick Data Probe**  
+
 🎯 **Objective:** Spot brief, opportunistic checks for available sensitive content.  
 📌 **Finding (answer):** "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
-🔍 **Evidence:**
-- **Host:** gab-intern-vm
-- **Timestamp:** 2025-10-09T12:50:39.955931Z
-- **Process:**  
-- **CommandLine:**  "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
+🔍 Evidence:
+- Host: gab-intern-vm
+- Timestamp: 2025-10-09T12:50:39.955931Z
+- Process: powershell.exe
+- Parent Process: powershell.exe (hidden session from Flag 1)
+- CommandLine: "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
 - 
 💡 **Why it matters:**  
 Immediately after gaining code execution, the attacker runs a tiny, low-footprint PowerShell one-liner that silently attempts to read whatever is currently on the victim’s clipboard (`Get-Clipboard`).  
@@ -187,13 +191,16 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 4 – Host Context Recon**  
-🎯 **Objective:** Find activity that gathers basic host and user context to inform follow-up actions. 
+🚩 **Flag 4 – Host Context Recon**
+
+🎯 **Objective:** Find activity that gathers basic host and user context to inform follow-up actions.
 📌 **Finding (answer):** 2025-10-09T12:51:44.3425653Z
-🔍 **Evidence:**  
-- **Host:** gab-intern-vm  
-- **Timestamp:**  2025-10-09T12:51:44.3425653Z
-- **Process:** `"powershell.exe" qwinsta` → spawned **qwinsta.exe**  
+🔍 Evidence:
+- Host: gab-intern-vm
+- Timestamp: 2025-10-09T12:51:44.3425653Z
+- Process: qwinsta.exe
+- Parent Process: powershell.exe (hidden)
+- CommandLine: qwinsta.exe 
 
 
 💡 **Why it matters:** 
