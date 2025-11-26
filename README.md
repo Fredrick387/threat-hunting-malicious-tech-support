@@ -1,3 +1,6 @@
+<img width="256" height="256" alt="image" src="https://github.com/user-attachments/assets/737a2c13-6865-446b-9409-38d1eb267306" /> 
+
+
 # Threat-Hunting-Malicious-Tech-Support
 Multiple machines in the department started spawning processes originating from the download folders. This unexpected scenario occurred during the first half of October. Several machines were found to share the same types of files — similar executables, naming patterns, and other traits. keywords discovered “desk,” “help,” “support,” and “tool.”
 
@@ -7,7 +10,7 @@ Analyst: Fredrick Wilson
 
 Date Completed: November 13th, 2025
 
-Environment Investigated: 
+Environment Investigated: gab-intern-vm
 
 Timeframe: Early October 2025
 
