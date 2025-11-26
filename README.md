@@ -84,19 +84,23 @@ DeviceProcessEvents
 - **Host:** gab-intern-vm  
 - **Timestamp:** 2025-10-09T13:13:12.5263837Z  
 - **Process:** 
-- **CommandLine:** `"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"`   
+- **CommandLine:** `"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"`
+
+
 💡 **Why it matters:**  
 The observed PowerShell command line explicitly uses the **-ExecutionPolicy Bypass** switch to force execution of **SupportTool.ps1** regardless of the system’s configured PowerShell execution policy (which is normally set to restrict or block unsigned scripts).  
 
 This is a hallmark of the initial malicious script execution in tech-support scams and many other real-world intrusions (MITRE ATT&CK **T1059.001 – Command and Scripting Interpreter: PowerShell** combined with **T1566.001 – Phishing: Spearphishing Attachment/Link**).  
 
 Key red flags in this single event:
+
 - **-ExecutionPolicy Bypass** – deliberately circumvents one of the primary built-in script execution safeguards on Windows systems.
 - **-WindowStyle Hidden** – prevents any visible console window, reducing the chance the victim notices anything.
 - Script sourced from the user’s **Downloads** folder – classic indicator of user-initiated execution after being socially engineered (e.g., “click this link to let the technician fix your computer”).
 - This is the true entry point of the attack chain: the moment adversary-controlled code first runs on the endpoint.
 
 Without this initial script execution, none of the subsequent defense evasion, persistence, discovery, or exfiltration activities (Flags 2–15) would have been possible. Detecting and alerting on **-ExecutionPolicy Bypass** (especially when combined with Hidden window style and execution from user-writable directories) is one of the highest-signal, lowest-false-positive indicators available to defenders.
+
 
 **KQL Query Used:**
 ```
@@ -117,6 +121,7 @@ DeviceProcessEvents
 - **Host:** gab-intern-vm
 - **Timestamp:** 2025-10-09T12:34:59.1260624Z
 - **Process:**  Explorer.EXE
+
 
 -💡 **Why it matters:**  
 
@@ -152,7 +157,22 @@ DeviceFileEvents
 - **Timestamp:** 2025-10-09T12:50:39.955931Z
 - **Process:**  
 - **CommandLine:**  "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
-💡 **Why it matters:** 
+- 
+💡 **Why it matters:**  
+Immediately after gaining code execution, the attacker runs a tiny, low-footprint PowerShell one-liner that silently attempts to read whatever is currently on the victim’s clipboard (`Get-Clipboard`).  
+
+This is a classic **opportunistic data-theft probe** (MITRE ATT&CK **T1115 – Clipboard Data**). Attackers love it because:
+
+- It requires exactly one command and zero persistence.
+- It’s extremely fast and quiet (the entire command finishes in milliseconds).
+- People frequently copy passwords, cryptocurrency wallet addresses, API keys, documents, or banking details to the clipboard — often without realizing it is momentarily stored in plain text.
+- The `try / catch` wrapper and `Out-Null` ensure the command produces no visible output even if the clipboard is empty.
+
+In real tech-support scams, ransomware incidents, and infostealer campaigns (e.g., Raccoon, RedLine, Vidar), clipboard harvesting is one of the very first “quick wins” attackers attempt — right after initial access and defense evasion, exactly where it appears in this timeline.  
+
+Finding this early, single-line probe is a strong signal that the actor is already hunting for high-value data and will likely escalate to broader collection and exfiltration (as seen in later flags).
+
+
 **KQL Query Used:**
 ```
 DeviceProcessEvents
