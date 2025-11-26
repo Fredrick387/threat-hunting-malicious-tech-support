@@ -99,7 +99,7 @@ The observed PowerShell command explicitly uses `-ExecutionPolicy Bypass` and `-
 
 This single event marks the true initial foothold (MITRE ATT&CK **T1059.001** + **T1566.001**). Without it, none of the subsequent 14 flags occur. Detecting this pattern is one of the highest-signal, lowest-false-positive alerts available to defenders.
 
-**🔎 KQL Query Used**
+**🔧 KQL Query Used**
 ```kql
 DeviceProcessEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
@@ -145,7 +145,7 @@ The file **DefenderTamperArtifact.lnk** is a Windows shortcut executed by the vi
 .lnk files are heavily abused in real attacks because they can be disguised with any icon and silently run payloads without dropping an obvious .exe.  
 In real incidents the name would be innocuous (e.g., “FixMyPC.lnk”), but the impact is identical: **MITRE ATT&CK T1562.001 – Impair Defenses**. Once Defender is neutralized, every subsequent payload (Flags 3–15) executes undetected.
 
-**🔎 KQL Query Used**
+**🔧 KQL Query Used**
 ```kql
 DeviceFileEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
@@ -185,7 +185,7 @@ Spot brief, opportunistic checks for available sensitive content.
 **💡 Why it matters**  
 This single-line PowerShell command silently attempts to steal whatever is currently on the victim’s clipboard (passwords, crypto addresses, documents, etc.). It is one of the fastest “easy wins” for attackers and appears extremely early in real tech-support scams and infostealer campaigns (MITRE ATT&CK **T1115 – Clipboard Data**). The `try/catch` and `Out-Null` ensure zero visible output even if the clipboard is empty.
 
-**🔎 KQL Query Used**
+**🔧 KQL Query Used**
 ```kql
 DeviceProcessEvents
 DeviceProcessEvents
@@ -206,84 +206,34 @@ DeviceProcessEvents
 | where ProcessCommandLine contains "Get-Clipboard"
 | where InitiatingProcessCommandLine contains "-WindowStyle Hidden" or "-EncodedCommand"
 ```
-
-
-
-
-
-
-🚩 **Flag 3 – Quick Data Probe**  
-
-🎯 **Objective:** Spot brief, opportunistic checks for available sensitive content.  
-📌 **Finding (answer):** "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
-🔍 Evidence:
-- Host: gab-intern-vm
-- Timestamp: 2025-10-09T12:50:39.955931Z
-- Process: powershell.exe
-- Parent Process: powershell.exe (hidden session from Flag 1)
-- CommandLine: "powershell.exe" -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"
-- 
-💡 **Why it matters:**  
-Immediately after gaining code execution, the attacker runs a tiny, low-footprint PowerShell one-liner that silently attempts to read whatever is currently on the victim’s clipboard (`Get-Clipboard`).  
-
-This is a classic **opportunistic data-theft probe** (MITRE ATT&CK **T1115 – Clipboard Data**). Attackers love it because:
-
-- It requires exactly one command and zero persistence.
-- It’s extremely fast and quiet (the entire command finishes in milliseconds).
-- People frequently copy passwords, cryptocurrency wallet addresses, API keys, documents, or banking details to the clipboard — often without realizing it is momentarily stored in plain text.
-- The `try / catch` wrapper and `Out-Null` ensure the command produces no visible output even if the clipboard is empty.
-
-In real tech-support scams, ransomware incidents, and infostealer campaigns (e.g., Raccoon, RedLine, Vidar), clipboard harvesting is one of the very first “quick wins” attackers attempt — right after initial access and defense evasion, exactly where it appears in this timeline.  
-
-Finding this early, single-line probe is a strong signal that the actor is already hunting for high-value data and will likely escalate to broader collection and exfiltration (as seen in later flags).
-
-
-**KQL Query Used:**
-```
-DeviceProcessEvents
-| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
-| where DeviceName == "gab-intern-vm"
-| where ProcessCommandLine contains "clip"
-| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
-```
-<img width="1512" height="387" alt="image" src="https://github.com/user-attachments/assets/c8692b84-567f-4e77-9e1c-c769297fd16f" />
-
-
-
 ---
 
-🚩 **Flag 4 – Host Context Recon**
+### 🚩 Flag 4 – Host Context Recon
+**🎯 Objective**  
+Find activity that gathers basic host and user context to inform follow-up actions.
 
-🎯 **Objective:** Find activity that gathers basic host and user context to inform follow-up actions.
-📌 **Finding (answer):** 2025-10-09T12:51:44.3425653Z
-🔍 Evidence:
-- Host: gab-intern-vm
-- Timestamp: 2025-10-09T12:51:44.3425653Z
-- Process: qwinsta.exe
-- Parent Process: powershell.exe (hidden)
-- CommandLine: qwinsta.exe 
+**📌 Finding**  
+`qwinsta.exe` executed from hidden PowerShell
 
+**🔍 Evidence**
 
-💡 **Why it matters:** 
-The attacker executes `qwinsta.exe` (Query Windows Station) from a hidden PowerShell session to silently enumerate the current logon sessions on the victim host.
+| Field            | Value                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------|
+| Host             | gab-intern-vm                                                                                  |
+| Timestamp        | 2025-10-09T12:51:44.3425653Z                                                                   |
+| Process          | qwinsta.exe                                                                                    |
+| Parent Process   | powershell.exe (hidden)                                                                        |
+| Command Line     | `qwinsta.exe`                                                                                  |
 
-This single command instantly answers three critical questions for the adversary:
+**💡 Why it matters**  
+The attacker runs the legitimate Microsoft binary `qwinsta.exe` (Query User / Query WinStation) to silently enumerate current logon sessions. This single command instantly tells the attacker:
+- The real username and session ID of the victim
+- Whether anyone else (e.g., an admin) is already connected via RDP
+- Which session is the active console and whether RDP is listening
 
-- Who is currently logged on and in which session? (reveals the real username and active console session)
-- Is anyone else (e.g., an admin) already connected via RDP?
-- Are RDP services enabled and listening for future remote access?
+In tech-support scams and ransomware attacks, this is a standard early reconnaissance step before enabling RDP, creating backdoors, or shadowing the victim’s session. Because `qwinsta.exe` is a signed system binary, it almost never triggers AV/EDR alerts (MITRE ATT&CK **T1033 – System Owner/User Discovery**).
 
-In real-world tech-support scams, ransomware deployments, and hands-on-keyboard intrusions, `qwinsta` is one of the first reconnaissance commands run after initial foothold. The output directly informs follow-on actions such as:
-- Creating or enabling RDP for persistent GUI access
-- Shadowing or hijacking the victim’s active session (so the fake “technician” can move the mouse in front of them)
-- Disconnecting or logging off the legitimate user if needed
-
-Because `qwinsta.exe` is a signed Microsoft binary and produces almost no visible artifacts, it is extremely stealthy and rarely blocked or alerted on by default EDR rules (MITRE ATT&CK **T1033 – System Owner/User Discovery** and preparation for **T1021.001 – Remote Desktop Protocol**).
-
-Spotting this early, low-noise reconnaissance is a high-confidence indicator that the attacker has shifted from initial access into active host enumeration and is preparing for deeper control of the endpoint.
-
-
-**KQL Query Used:**
+**🔧 KQL Query Used**  
 ```
 DeviceProcessEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
@@ -291,9 +241,18 @@ DeviceProcessEvents
 | where ProcessCommandLine contains "qwi"
 | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 ```
+
+**🖼️ Screenshot**  
 <img width="1528" height="469" alt="image" src="https://github.com/user-attachments/assets/a19e818e-c493-4be2-9c22-62de6dbbfa0d" />
+*Figure 4: qwinsta.exe executed from hidden PowerShell to reveal active user sessions*
 
-
+**🛠️ Detection Recommendation**
+```kql
+DeviceProcessEvents
+| where FileName in ("qwinsta.exe", "query.exe")
+| where InitiatingProcessName == "powershell.exe"
+   or InitiatingProcessCommandLine contains "-WindowStyle Hidden"
+```
 ---
 
 🚩 **Flag 5 – Storage Surface Mapping**  
