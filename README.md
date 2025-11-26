@@ -4,7 +4,7 @@
 # Threat-Hunting-Malicious-Tech-Support
 Multiple machines in the department started spawning processes originating from the download folders. This unexpected scenario occurred during the first half of October. Several machines were found to share the same types of files — similar executables, naming patterns, and other traits. keywords discovered “desk,” “help,” “support,” and “tool.”
 
-#  Threat Hunt Report: Support Session
+# 🔎 Threat Hunt Report: Support Session
 
 Analyst: Fredrick Wilson
 
@@ -14,7 +14,7 @@ Environment Investigated: gab-intern-vm
 
 Timeframe: Early October 2025
 
-## Scenario
+## ℹ️ Scenario
 A routine support request should have ended with a reset and reassurance. Instead, the so-called “help” left behind a trail of anomalies that don’t add up.
 
 What was framed as troubleshooting looked more like an audit of the system itself — probing, cataloging, leaving subtle traces in its wake. Actions chained together in suspicious sequence: first gaining a foothold, then expanding reach, then preparing to linger long after the session ended.
@@ -31,9 +31,9 @@ The evidence is here. The question is whether you’ll see through the story or 
 
 | **Time (UTC)**           | **Flag** | **Action Observed**                          | **Key Evidence**                                        |
 | ------------------------ | -------- | -------------------------------------------- | ------------------------------------------------------- |
-| **2025-10-09T13:13:12Z** | Flag 1   | Malicious file created (`Supporttool.ps1`)   | File dropped via PowerShell                             |
-| **2025-10-09T12:34:59Z** | Flag 2   | Initial execution of staging script          | PowerShell running HR script                            |
-| **2025-10-09T12:50:39Z** | Flag 3   | User token impersonation attempt             | Suspicious use of `runas`                               |
+| **2025-10-09T13:13** | Flag 1   | Malicious file created (`Supporttool.ps1`)   | File dropped via PowerShell                             |
+| **2025-10-09T12:34** | Flag 2   | Indicator of Security Posture Change        | DefenderTamperArtifact.lnk                            |
+| **2025-10-09T12:50:39Z** | Flag 3   | User token impersonation attempt             |                                |
 | **2025-07-18T04:19:53Z** | Flag 4   | Reconnaissance of accounts & groups          | `net user /domain`                                      |
 | **2025-07-18T05:05:10Z** | Flag 5   | Privilege escalation via service abuse       | `sc.exe config`                                         |
 | **2025-07-18T05:27:32Z** | Flag 6   | Credential dumping from `lsass.exe`          | 92 access attempts                                      |
@@ -106,7 +106,16 @@ DeviceProcessEvents
 - **Host:** gab-intern-vm
 - **Timestamp:** 2025-10-09T12:34:59.1260624Z
 - **Process:**  Explorer.EXE 
-💡 **Why it matters:** `
+💡 **Why it matters:**  
+The file **DefenderTamperArtifact.lnk** is a Windows shortcut (.lnk) executed by the victim (via Explorer.EXE) early in the attack chain.  
+In real-world attacks, adversaries frequently abuse .lnk files because they:
+- Can be disguised with innocent-looking icons (PDF, Word, folder, etc.) to trick users into double-clicking.
+- Silently launch hidden commands (PowerShell, CMD, rundll32, etc.) without dropping an obvious executable.
+- Are commonly used in tech-support scams and phishing campaigns to bypass email gateways and basic AV heuristics.
+
+In this specific simulation, the shortcut was intentionally named “DefenderTamperArtifact.lnk” to make the activity obvious for training and detection validation purposes (a common practice in frameworks like Atomic Red Team). In an actual incident, the filename would be disguised (e.g., “ScanReport.pdf.lnk” or “FixPC.lnk”), but the behavior and impact remain identical: executing commands that disable or weaken Microsoft Defender (real-time protection, cloud-delivered protection, scan exclusions, etc.).
+
+This single action (MITRE ATT&CK T1562.001 – Impair Defenses: Disable or Modify Tools) is a critical pivot point. Once Defender is neutralized, the attacker can proceed with downloading payloads, establishing persistence, and exfiltrating data (Flags 3–15) with significantly reduced chance of automated detection.`
 **KQL Query Used:**
 ```
 DeviceFileEvents
