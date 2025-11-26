@@ -194,7 +194,27 @@ DeviceProcessEvents
 - **Host:** gab-intern-vm  
 - **Timestamp:**  2025-10-09T12:51:44.3425653Z
 - **Process:** `"powershell.exe" qwinsta` → spawned **qwinsta.exe**  
+
+
 💡 **Why it matters:** 
+The attacker executes `qwinsta.exe` (Query Windows Station) from a hidden PowerShell session to silently enumerate the current logon sessions on the victim host.
+
+This single command instantly answers three critical questions for the adversary:
+
+- Who is currently logged on and in which session? (reveals the real username and active console session)
+- Is anyone else (e.g., an admin) already connected via RDP?
+- Are RDP services enabled and listening for future remote access?
+
+In real-world tech-support scams, ransomware deployments, and hands-on-keyboard intrusions, `qwinsta` is one of the first reconnaissance commands run after initial foothold. The output directly informs follow-on actions such as:
+- Creating or enabling RDP for persistent GUI access
+- Shadowing or hijacking the victim’s active session (so the fake “technician” can move the mouse in front of them)
+- Disconnecting or logging off the legitimate user if needed
+
+Because `qwinsta.exe` is a signed Microsoft binary and produces almost no visible artifacts, it is extremely stealthy and rarely blocked or alerted on by default EDR rules (MITRE ATT&CK **T1033 – System Owner/User Discovery** and preparation for **T1021.001 – Remote Desktop Protocol**).
+
+Spotting this early, low-noise reconnaissance is a high-confidence indicator that the attacker has shifted from initial access into active host enumeration and is preparing for deeper control of the endpoint.
+
+
 **KQL Query Used:**
 ```
 DeviceProcessEvents
