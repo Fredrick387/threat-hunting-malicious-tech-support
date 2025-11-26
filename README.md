@@ -77,79 +77,140 @@ DeviceProcessEvents
 
 ---
 
-🚩 **Flag 1 – Initial Execution Detection**  
-🎯 **Objective:** Detect the earliest anomalous execution that could represent an entry point. 
-📌 **Finding (answer):** -ExecutionPolicy
-- Host: gab-intern-vm
-- Timestamp: 2025-10-09T13:13:12.5263837Z
-- Process: powershell.exe
-- Parent Process: explorer.exe (user double-click)
-- CommandLine: "powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"
+### 🚩 Flag 1 – Initial Execution Detection
+**🎯 Objective**  
+Detect the earliest anomalous execution that could represent an entry point.
 
-💡 **Why it matters:**  
-The observed PowerShell command line explicitly uses the **-ExecutionPolicy Bypass** switch to force execution of **SupportTool.ps1** regardless of the system’s configured PowerShell execution policy (which is normally set to restrict or block unsigned scripts).  
+**📌 Finding**  
+`-ExecutionPolicy Bypass` (execution of `SupportTool.ps1`)
 
-This is a hallmark of the initial malicious script execution in tech-support scams and many other real-world intrusions (MITRE ATT&CK **T1059.001 – Command and Scripting Interpreter: PowerShell** combined with **T1566.001 – Phishing: Spearphishing Attachment/Link**).  
+**🔍 Evidence**
 
-Key red flags in this single event:
+| Field              | Value                                                                                              |
+|--------------------|----------------------------------------------------------------------------------------------------|
+| Host               | gab-intern-vm                                                                                      |
+| Timestamp          | 2025-10-09T13:13:12.5263837Z                                                                       |
+| Process            | powershell.exe                                                                                     |
+| Parent Process     | explorer.exe                                                                                       |
+| Command Line       | `powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"` |
 
-- **-ExecutionPolicy Bypass** – deliberately circumvents one of the primary built-in script execution safeguards on Windows systems.
-- **-WindowStyle Hidden** – prevents any visible console window, reducing the chance the victim notices anything.
-- Script sourced from the user’s **Downloads** folder – classic indicator of user-initiated execution after being socially engineered (e.g., “click this link to let the technician fix your computer”).
-- This is the true entry point of the attack chain: the moment adversary-controlled code first runs on the endpoint.
+**💡 Why it matters**  
+The observed PowerShell command explicitly uses `-ExecutionPolicy Bypass` and `-WindowStyle Hidden` to silently run an unsigned script from the user’s Downloads folder — the classic hallmark of user-initiated malicious execution in tech-support scams.
 
-Without this initial script execution, none of the subsequent defense evasion, persistence, discovery, or exfiltration activities (Flags 2–15) would have been possible. Detecting and alerting on **-ExecutionPolicy Bypass** (especially when combined with Hidden window style and execution from user-writable directories) is one of the highest-signal, lowest-false-positive indicators available to defenders.
+This single event marks the true initial foothold (MITRE ATT&CK **T1059.001** + **T1566.001**). Without it, none of the subsequent 14 flags occur. Detecting this pattern is one of the highest-signal, lowest-false-positive alerts available to defenders.
 
-
-**KQL Query Used:**
-```
+**🔎 KQL Query Used**
+```kql
 DeviceProcessEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
 | where DeviceName == "gab-intern-vm"
 | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 ```
+
+**🖼️ Screenshot / Telemetry View**  
 <img width="1513" height="483" alt="image" src="https://github.com/user-attachments/assets/71eae36c-65ec-4bf8-898d-618304e7fedd" />
+*Figure 1: DeviceProcessEvents record showing the hidden PowerShell launch with -ExecutionPolicy Bypass*
+
+**🛠️ Detection Recommendation**  
+Alert on:
+```kql
+DeviceProcessEvents
+| where ProcessCommandLine has_all("-ExecutionPolicy Bypass", "-WindowStyle Hidden")
+   and FolderPath endswith @"Downloads\"
+   or FolderPath in ("C:\\Temp\\", "C:\\Users\\Public\\", "C:\\Windows\\Temp\\")
+```
 
 ---
 
+### 🚩 Flag 2 – Defense Disabling
+**🎯 Objective**  
+Identify indicators that suggest to imply or simulate changing security posture.
 
-🚩 **Flag 2 – Defense Disabling**  
+**📌 Finding**  
+`DefenderTamperArtifact.lnk`
 
-🎯 **Objective:** Identify indicators that suggest to imply or simulate changing security posture.  
-📌 **Finding (answer):** DefenderTamperArtifact.lnk  
-🔍 Evidence:
-- Host: gab-intern-vm
-- Timestamp: 2025-10-09T12:34:59.1260624Z
-- Process: explorer.exe → DefenderTamperArtifact.lnk
-- Parent Process: explorer.exe
-- CommandLine: "C:\Users\g4bri3lintern\Downloads\DefenderTamperArtifact.lnk"
+**🔍 Evidence**
 
+| Field            | Value                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------|
+| Host             | gab-intern-vm                                                                                  |
+| Timestamp        | 2025-10-09T12:34:59.1260624Z                                                                   |
+| Process          | DefenderTamperArtifact.lnk → powershell.exe                                                    |
+| Parent Process   | explorer.exe                                                                                   |
+| Command Line     | `"C:\Users\g4bri3lintern\Downloads\DefenderTamperArtifact.lnk"`                                |
 
--💡 **Why it matters:**  
+**💡 Why it matters**  
+The file **DefenderTamperArtifact.lnk** is a Windows shortcut executed by the victim that launches hidden PowerShell commands to disable or weaken Microsoft Defender Antivirus (real-time protection, cloud-delivered protection, scan exclusions, etc.).  
 
-The file **DefenderTamperArtifact.lnk** is a Windows shortcut (.lnk) executed by the victim (via Explorer.EXE) early in the attack chain.  
-In real-world attacks, adversaries frequently abuse .lnk files because they:
+.lnk files are heavily abused in real attacks because they can be disguised with any icon and silently run payloads without dropping an obvious .exe.  
+In real incidents the name would be innocuous (e.g., “FixMyPC.lnk”), but the impact is identical: **MITRE ATT&CK T1562.001 – Impair Defenses**. Once Defender is neutralized, every subsequent payload (Flags 3–15) executes undetected.
 
-- Can be disguised with innocent-looking icons (PDF, Word, folder, etc.) to trick users into double-clicking.
-- Silently launch hidden commands (PowerShell, CMD, rundll32, etc.) without dropping an obvious executable.
-- Are commonly used in tech-support scams and phishing campaigns to bypass email gateways and basic AV heuristics.
-
-In this specific simulation, the shortcut was intentionally named “DefenderTamperArtifact.lnk” to make the activity obvious for training and detection validation purposes (a common practice in frameworks like Atomic Red Team). In an actual incident, the filename would be disguised (e.g., “ScanReport.pdf.lnk” or “FixPC.lnk”), but the behavior and impact remain identical: executing commands that disable or weaken Microsoft Defender (real-time protection, cloud-delivered protection, scan exclusions, etc.).
-
-This single action (MITRE ATT&CK T1562.001 – Impair Defenses: Disable or Modify Tools) is a critical pivot point. Once Defender is neutralized, the attacker can proceed with downloading payloads, establishing persistence, and exfiltrating data (Flags 3–15) with significantly reduced chance of automated detection.`
-
-
-**KQL Query Used:**
-```
+**🔎 KQL Query Used**
+```kql
 DeviceFileEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
 | where FileName contains "artifact" or FileName contains "tamper"
 | project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessFileName, Type
 ```
-<img width="1498" height="206" alt="image" src="https://github.com/user-attachments/assets/3f5f4c3c-4220-47bf-94e7-3491d7ff7618" />
 
+**🖼️ Screenshot**  
+<img width="1498" height="206" alt="image" src="https://github.com/user-attachments/assets/3f5f4c3c-4220-47bf-94e7-3491d7ff7618" /> 
+*Figure 2: User-initiated execution of the malicious shortcut that disables Defender*
 
+**🛠️ Detection Recommendation**
+```kql
+DeviceProcessEvents
+| where FileName endswith ".lnk"
+| where ProcessCommandLine has_any("Set-MpPreference", "Add-MpPreference", "-DisableRealtimeMonitoring", "-Exclusion")
+```
 ---
+
+### 🚩 Flag 3 – Quick Data Probe
+**🎯 Objective**  
+Spot brief, opportunistic checks for available sensitive content.
+
+**📌 Finding**  
+`Get-Clipboard` executed silently from hidden PowerShell
+
+**🔍 Evidence**
+
+| Field            | Value                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------|
+| Host             | gab-intern-vm                                                                                  |
+| Timestamp        | 2025-10-09T12:50:39.955931Z                                                                    |
+| Process          | powershell.exe                                                                                 |
+| Parent Process   | powershell.exe (hidden)                                                                        |
+| Command Line     | `powershell.exe -NoProfile -Sta -Command "try { Get-Clipboard | Out-Null } catch { }"`         |
+
+**💡 Why it matters**  
+This single-line PowerShell command silently attempts to steal whatever is currently on the victim’s clipboard (passwords, crypto addresses, documents, etc.). It is one of the fastest “easy wins” for attackers and appears extremely early in real tech-support scams and infostealer campaigns (MITRE ATT&CK **T1115 – Clipboard Data**). The `try/catch` and `Out-Null` ensure zero visible output even if the clipboard is empty.
+
+**🔎 KQL Query Used**
+```kql
+DeviceProcessEvents
+DeviceProcessEvents
+| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+| where DeviceName == "gab-intern-vm"
+| where ProcessCommandLine contains "clip"
+| project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
+```
+
+**🖼️ Screenshot**  
+<img width="1512" height="387" alt="image" src="https://github.com/user-attachments/assets/c8692b84-567f-4e77-9e1c-c769297fd16f" />
+
+
+
+**🛠️ Detection Recommendation**
+```kql
+DeviceProcessEvents
+| where ProcessCommandLine contains "Get-Clipboard"
+| where InitiatingProcessCommandLine contains "-WindowStyle Hidden" or "-EncodedCommand"
+```
+
+
+
+
+
 
 🚩 **Flag 3 – Quick Data Probe**  
 
