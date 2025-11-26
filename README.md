@@ -85,7 +85,18 @@ DeviceProcessEvents
 - **Timestamp:** 2025-10-09T13:13:12.5263837Z  
 - **Process:** 
 - **CommandLine:** `"powershell.exe" -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "C:\Users\g4bri3lintern\Downloads\SupportTool.ps1"`   
-💡 **Why it matters:**
+💡 **Why it matters:**  
+The observed PowerShell command line explicitly uses the **-ExecutionPolicy Bypass** switch to force execution of **SupportTool.ps1** regardless of the system’s configured PowerShell execution policy (which is normally set to restrict or block unsigned scripts).  
+
+This is a hallmark of the initial malicious script execution in tech-support scams and many other real-world intrusions (MITRE ATT&CK **T1059.001 – Command and Scripting Interpreter: PowerShell** combined with **T1566.001 – Phishing: Spearphishing Attachment/Link**).  
+
+Key red flags in this single event:
+- **-ExecutionPolicy Bypass** – deliberately circumvents one of the primary built-in script execution safeguards on Windows systems.
+- **-WindowStyle Hidden** – prevents any visible console window, reducing the chance the victim notices anything.
+- Script sourced from the user’s **Downloads** folder – classic indicator of user-initiated execution after being socially engineered (e.g., “click this link to let the technician fix your computer”).
+- This is the true entry point of the attack chain: the moment adversary-controlled code first runs on the endpoint.
+
+Without this initial script execution, none of the subsequent defense evasion, persistence, discovery, or exfiltration activities (Flags 2–15) would have been possible. Detecting and alerting on **-ExecutionPolicy Bypass** (especially when combined with Hidden window style and execution from user-writable directories) is one of the highest-signal, lowest-false-positive indicators available to defenders.
 
 **KQL Query Used:**
 ```
@@ -105,10 +116,13 @@ DeviceProcessEvents
 🔍 **Evidence:**  
 - **Host:** gab-intern-vm
 - **Timestamp:** 2025-10-09T12:34:59.1260624Z
-- **Process:**  Explorer.EXE 
-💡 **Why it matters:**  
+- **Process:**  Explorer.EXE
+
+-💡 **Why it matters:**  
+
 The file **DefenderTamperArtifact.lnk** is a Windows shortcut (.lnk) executed by the victim (via Explorer.EXE) early in the attack chain.  
 In real-world attacks, adversaries frequently abuse .lnk files because they:
+
 - Can be disguised with innocent-looking icons (PDF, Word, folder, etc.) to trick users into double-clicking.
 - Silently launch hidden commands (PowerShell, CMD, rundll32, etc.) without dropping an obvious executable.
 - Are commonly used in tech-support scams and phishing campaigns to bypass email gateways and basic AV heuristics.
@@ -116,6 +130,8 @@ In real-world attacks, adversaries frequently abuse .lnk files because they:
 In this specific simulation, the shortcut was intentionally named “DefenderTamperArtifact.lnk” to make the activity obvious for training and detection validation purposes (a common practice in frameworks like Atomic Red Team). In an actual incident, the filename would be disguised (e.g., “ScanReport.pdf.lnk” or “FixPC.lnk”), but the behavior and impact remain identical: executing commands that disable or weaken Microsoft Defender (real-time protection, cloud-delivered protection, scan exclusions, etc.).
 
 This single action (MITRE ATT&CK T1562.001 – Impair Defenses: Disable or Modify Tools) is a critical pivot point. Once Defender is neutralized, the attacker can proceed with downloading payloads, establishing persistence, and exfiltrating data (Flags 3–15) with significantly reduced chance of automated detection.`
+
+
 **KQL Query Used:**
 ```
 DeviceFileEvents
