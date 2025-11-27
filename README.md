@@ -255,25 +255,52 @@ DeviceProcessEvents
 ```
 ---
 
-🚩 **Flag 5 – Storage Surface Mapping**  
-🎯 **Objective:** Detection of local or network storage locations that might hold interesting data. 
-📌 **Finding (answer):** "cmd.exe" /c wmic logicaldisk get name,freespace,size 
-🔍 **Evidence:**  
-- **Host:**   
-- **Timestamps:** 2025-10-09T12:51:18.3848072Z
-- **Process:**  "cmd.exe" /c wmic logicaldisk get name,freespace,size 
-- **CommandLine:** "cmd.exe" /c wmic logicaldisk get name,freespace,size   
-💡 **Why it matters:**
-**KQL Query Used:**
-```
+### 🚩 Flag 5 – Storage Surface Mapping
+**🎯 Objective**  
+Detection of local or network storage locations that might hold interesting data.
+
+**📌 Finding**  
+`wmic logicaldisk get name,freespace,size`
+
+**🔍 Evidence**
+
+| Field            | Value                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------|
+| Host             | gab-intern-vm                                                                                  |
+| Timestamp        | 2025-10-09T12:51:18.3848072Z                                                                   |
+| Process          | cmd.exe                                                                                        |
+| Parent Process   | powershell.exe (hidden session)                                                                |
+| Command Line     | `"cmd.exe" /c wmic logicaldisk get name,freespace,size`                                        |
+
+**💡 Why it matters**  
+The attacker uses the built-in `wmic` command to silently enumerate all logical disks, their drive letters, total size, and free space. This extremely common reconnaissance step serves two critical purposes in real intrusions:
+
+- Quickly identifies large drives or partitions that likely contain valuable data (Documents, Desktop, corporate shares, backups, databases, etc.)
+- Reveals mapped network drives (often Z:\, S:\, etc.) that point to file servers — prime targets for ransomware encryption or data theft
+
+Because `wmic.exe` is a signed Microsoft binary and the query itself looks perfectly legitimate, it rarely triggers alerts, yet it gives the attacker a full storage heatmap in milliseconds (MITRE ATT&CK **T1083 – File and Directory Discovery** combined with **T1135 – Network Share Discovery**).  
+In tech-support scams and ransomware attacks, this exact command frequently appears minutes before mass encryption or exfiltration begins.
+
+**🔧 KQL Query Used**
+```kql
 DeviceProcessEvents
 | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
 | where DeviceName == "gab-intern-vm"
 | where ProcessCommandLine contains "disk"
 | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 ```
-<img width="1520" height="226" alt="image" src="https://github.com/user-attachments/assets/992f424c-b41c-487f-af40-3885ea3591c7" />
 
+**🖼️ Screenshot**  
+<img width="1520" height="226" alt="image" src="https://github.com/user-attachments/assets/992f424c-b41c-487f-af40-3885ea3591c7" />
+*Figure 5: Attacker mapping all local and network drives with size and free space*
+
+
+**🛠️ Detection Recommendation**
+```kql
+DeviceProcessEvents
+| where FileName == "wmic.exe"
+| where ProcessCommandLine contains "logicaldisk" and ProcessCommandLine contains "get "
+| where InitiatingProcessName == "powershell.exe" or InitiatingProcessCommandLine contains "-WindowStyle Hidden"
 
 ---
 
