@@ -301,26 +301,45 @@ DeviceProcessEvents
 | where FileName == "wmic.exe"
 | where ProcessCommandLine contains "logicaldisk" and ProcessCommandLine contains "get "
 | where InitiatingProcessName == "powershell.exe" or InitiatingProcessCommandLine contains "-WindowStyle Hidden"
-
+```
 ---
 
-🚩 **Flag 6 – Connectivity & Name Resolution Check**  
-🎯 **Objective:** Identify checks that validate network reachability and name resolution.  
-📌 **Finding (answer):**  RuntimeBroker.exe
-🔍 **Evidence:**  
-- **Host:**   
-- **Timestamps:** 2025-10-09T12:55:05.7658713Z
-- **Process:**  
-- **CommandLine:**  "powershell.exe" 
-💡 **Why it matters:**
-**KQL Query Used:**
-```
-DeviceNetworkEvents
-| where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
-| where DeviceName == "gab-intern-vm"
-| project TimeGenerated, DeviceName, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
-```
+### 🚩 Flag 6 – Connectivity & Name Resolution Check  
+**🎯 Objective**  
+Identify brief probes that confirm whether the host can reach external infrastructure or resolve domain names.
+
+**📌 Finding**  
+`RuntimeBroker.exe` initiating unexpected outbound connectivity through PowerShell
+
+**🔍 Evidence**
+
+| Field            | Value                                                                 |
+|------------------|-----------------------------------------------------------------------|
+| Host             | gab-intern-vm                                                         |
+| Timestamp        | 2025-10-09T12:55:05.7658713Z                                          |
+| Process          | RuntimeBroker.exe                                                     |
+| Parent Process   | Unknown / N/A (needs enrichment)                                      |
+| Command Line     | `powershell.exe`                                                      |
+
+**💡 Why it matters**  
+`RuntimeBroker.exe` normally manages app permissions and should *rarely* be directly involved in outbound network calls. When it triggers PowerShell-based connectivity checks, it may indicate early-stage reconnaissance used to validate command-and-control reachability, test DNS resolution, or map egress paths. This behavior often precedes malware staging, payload downloads, or the establishment of persistence. Suspicious parent-child relationships involving PowerShell are strongly associated with MITRE ATT&CK **T1046 – Network Service Discovery** and **T1018 – Remote System Discovery**.
+
+**🔧 KQL Query Used**
+
+    DeviceNetworkEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | project TimeGenerated, DeviceName, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
+
+**🖼️ Screenshot**  
 <img width="1508" height="528" alt="image" src="https://github.com/user-attachments/assets/b37ee5f7-5e43-4c42-9a28-bf3ff4603055" />
+
+**🛠️ Detection Recommendation**
+
+    DeviceNetworkEvents
+    | where InitiatingProcessFileName =~ "RuntimeBroker.exe"
+    | where InitiatingProcessParentFileName =~ "powershell.exe"
+    | project TimeGenerated, DeviceName, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
 
 
 ---
@@ -522,6 +541,331 @@ DeviceFileEvents
 <img width="1508" height="294" alt="image" src="https://github.com/user-attachments/assets/359e2ae3-d3e1-42a5-a84e-35e7d4d4bbad" />
 
 
+### 🚩 Flag 7 – Interactive Session Discovery
+**🎯 Objective**
+Reveal interactive or active user sessions on the host.
+
+**📌 Finding**
+whoami /groups executed, SIDs enumerated: 2533274790397065
+
+**🔍 Evidence**
+
+| Field            | Value                               |
+|------------------|-------------------------------------|
+| Host             | gab-intern-vm                        |
+| Timestamp        | 2025-10-09T12:52:14.3135459Z        |
+| Process          | cmd.exe                              |
+| Parent Process   | Unknown / N/A                        |
+| Command Line     | cmd.exe /c whoami /groups            |
+
+**💡 Why it matters**
+Attackers enumerate user sessions and group memberships to understand privilege level and lateral movement potential, a core part of early reconnaissance (MITRE ATT&CK T1033 – Account Discovery).
+
+**🔧 KQL Query Used**
+    DeviceProcessEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | where ProcessCommandLine contains "who"
+    | where ProcessCommandLine !contains "msedge"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
+
+**🛠️ Detection Recommendation**
+    DeviceProcessEvents
+    | where ProcessCommandLine contains "whoami" and ProcessCommandLine contains "/groups"
+    | where InitiatingProcessFileName !contains "explorer.exe"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 8 – Runtime Application Inventory
+**🎯 Objective**
+Detect enumeration of running applications and services.
+
+**📌 Finding**
+tasklist.exe executed
+
+**🔍 Evidence**
+
+| Field            | Value                               |
+|------------------|-------------------------------------|
+| Host             | gab-intern-vm                        |
+| Timestamp        | 2025-10-09T12:51:57.6866149Z        |
+| Process          | cmd.exe                              |
+| Command Line     | cmd.exe /c tasklist /v               |
+
+**💡 Why it matters**
+`tasklist /v` reveals all running processes, window titles, and session data. Attackers use this to find security tools, high-privilege processes, and high-value targets (MITRE ATT&CK T1057 – Process Discovery).
+
+**🔧 KQL Query Used**
+    DeviceProcessEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | where ProcessCommandLine contains "list"
+    | where ProcessCommandLine !contains "msedge"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
+
+**🛠️ Detection Recommendation**
+    DeviceProcessEvents
+    | where ProcessCommandLine contains "tasklist"
+    | where InitiatingProcessFileName !contains "explorer.exe"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 9 – Privilege Surface Check
+**🎯 Objective**
+Understand the actor’s current privilege level.
+
+**📌 Finding**
+Repeated execution of whoami /groups
+
+**🔍 Evidence**
+
+| Field            | Value                               |
+|------------------|-------------------------------------|
+| Host             | gab-intern-vm                        |
+| Timestamp        | 2025-10-09T12:52:14.3135459Z        |
+| Process          | cmd.exe                              |
+| Command Line     | cmd.exe /c whoami /groups            |
+
+**💡 Why it matters**
+Privilege enumeration often occurs before escalation attempts. Understanding available group privileges informs what high-impact actions an attacker can take (MITRE ATT&CK T1069 – Permission Groups Discovery).
+
+**🔧 KQL Query Used**
+    DeviceProcessEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | where ProcessCommandLine contains "who"
+    | where ProcessCommandLine !contains "msedge"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
+    | order by TimeGenerated asc
+
+**🛠️ Detection Recommendation**
+    DeviceProcessEvents
+    | where ProcessCommandLine contains "whoami" and ProcessCommandLine contains "/groups"
+    | where InitiatingProcessFileName !contains "explorer.exe"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 10 – Proof-of-Access & Egress Validation
+**🎯 Objective**
+Confirm outbound network reachability and test exfiltration value.
+
+**📌 Finding**
+Outbound traffic to www.msftconnecttest.com
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Host             | gab-intern-vm             |
+| RemoteUrl        | www.msftconnecttest.com   |
+| Sequence         | Not provided              |
+
+**💡 Why it matters**
+This URL is used for Windows connectivity checks (NCSI). Attackers leverage it to validate outbound access. Observed via unusual processes may indicate C2 egress testing (MITRE T1018 – Remote System Discovery).
+
+**🔧 KQL Query Used**
+    DeviceNetworkEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
+    | order by TimeGenerated asc
+
+**🛠️ Detection Recommendation**
+    DeviceNetworkEvents
+    | where RemoteUrl contains "msftconnecttest"
+    | project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 11 – Bundling / Staging Artifacts
+**🎯 Objective**
+Detect artifacts being staged for transfer.
+
+**📌 Finding**
+ReconArtifacts.zip
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Host             | gab-intern-vm             |
+| Timestamp        | 2025-10-09T12:58:17.4364257Z |
+| Initiating Process | powershell.exe          |
+
+**💡 Why it matters**
+Staging files into a single location can indicate exfiltration prep or malware packaging. Common MITRE technique: T1074 – Data Staged.
+
+**🔧 KQL Query Used**
+    DeviceFileEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where FileName contains "artifact" or FileName contains "tamper"
+    | project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessFileName, Type
+
+**🛠️ Detection Recommendation**
+    DeviceFileEvents
+    | where FileName contains "artifact" or FileName contains "zip"
+    | project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 12 – Outbound Transfer Attempt (Simulated)
+**🎯 Objective**
+Identify attempts to move data off-host.
+
+**📌 Finding**
+Connection to 100.29.147.161
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Host             | gab-intern-vm             |
+| Timestamp        | 2025-10-09T13:00:40.045127Z |
+| Process          | powershell.exe            |
+
+**💡 Why it matters**
+Outbound network attempts to unknown IPs can indicate exfiltration or upload tests (MITRE T1041 – Exfiltration Over C2 Channel).
+
+**🔧 KQL Query Used**
+    DeviceNetworkEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP, RemoteUrl, RemoteIPType, InitiatingProcessFileName, InitiatingProcessParentFileName
+    | order by TimeGenerated asc
+
+**🛠️ Detection Recommendation**
+    DeviceNetworkEvents
+    | where RemoteIP == "100.29.147.161"
+    | project TimeGenerated, DeviceName, InitiatingProcessCommandLine, RemoteIP
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 13 – Scheduled Re-Execution Persistence
+**🎯 Objective**
+Detect creation of mechanisms to re-run tooling on logon.
+
+**📌 Finding**
+SupportToolUpdater scheduled task
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Command          | schtasks.exe /Create /SC ONLOGON /TN SupportToolUpdater ... |
+| Host             | gab-intern-vm             |
+| Timestamp        | 2025-10-09T13:01:28.7700443Z |
+
+**💡 Why it matters**
+Scheduled tasks can maintain persistence after logon. MITRE T1053 – Scheduled Task/Job.
+
+**🔧 KQL Query Used**
+    DeviceProcessEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | where ProcessCommandLine contains "sch"
+    | where ProcessCommandLine !contains "msedge"
+    | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine, InitiatingProcessUniqueId
+    | order by TimeGenerated asc
+
+**🛠️ Detection Recommendation**
+    DeviceProcessEvents
+    | where ProcessCommandLine contains "schtasks.exe"
+    | project TimeGenerated, DeviceName, ProcessCommandLine
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 14 – Autorun Fallback Persistence
+**🎯 Objective**
+Spot lightweight autorun entries as backup persistence.
+
+**📌 Finding**
+RemoteAssistUpdater
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Host             | gab-intern-vm             |
+| Timestamp        | (insert timestamp)        |
+| Process          | (insert process)          |
+| Command          | (insert command)          |
+
+**💡 Why it matters**
+Malware can add autorun entries to maintain persistence. MITRE T1547 – Boot or Logon Autostart Execution.
+
+**🔧 KQL Query Used**
+    DeviceRegistryEvents
+    | where RegistryKey contains "Run" or RegistryKey contains "Startup"
+    | where RegistryValueName contains "RemoteAssistUpdater"
+    | project TimeGenerated, DeviceName, RegistryKey, RegistryValueName, RegistryValueData
+
+**🛠️ Detection Recommendation**
+    DeviceRegistryEvents
+    | where RegistryValueName contains "RemoteAssistUpdater"
+    | project TimeGenerated, DeviceName, RegistryKey, RegistryValueName
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+---
+
+### 🚩 Flag 15 – Planted Narrative / Cover Artifact
+**🎯 Objective**
+Identify a narrative or explanatory artifact intended to justify activity.
+
+**📌 Finding**
+SupportChat_log.lnk
+
+**🔍 Evidence**
+
+| Field            | Value                                             |
+|------------------|--------------------------------------------------|
+| File             | C:\Users\g4bri3lintern\Downloads\SupportChat_log.txt |
+| Timestamp        | 2025-10-09T13:02:41.5698148Z                    |
+| Process          | NOTEPAD.EXE                                      |
+| Host             | gab-intern-vm                                    |
+
+**💡 Why it matters**
+Attackers sometimes create misleading artifacts to cover tracks or explain activity. MITRE T1604 – Masquerading / Covering Tracks.
+
+**🔧 KQL Query Used**
+    DeviceFileEvents
+    | where TimeGenerated between (startofday(datetime(2025-10-09)) .. endofday(datetime(2025-10-09)))
+    | where DeviceName == "gab-intern-vm"
+    | where FileName contains "support"
+    | project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine, InitiatingProcessFileName, Type
+
+**🛠️ Detection Recommendation**
+    DeviceFileEvents
+    | where FileName contains "support"
+    | project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
 
 
 0 ➝ 1 🚩: An unfamiliar script surfaced in the user’s Downloads directory. Was this SupportTool.ps1 executed under the guise of IT diagnostics?
