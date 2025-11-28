@@ -576,7 +576,7 @@ Attackers enumerate user sessions and group memberships to understand privilege 
     | project TimeGenerated, DeviceName, ProcessCommandLine, FileName, InitiatingProcessCommandLine
 
 **🖼️ Screenshot**
-🖼️ Insert screenshot here
+<img width="1478" height="481" alt="image" src="https://github.com/user-attachments/assets/151b4586-33c8-4262-8e53-42aea244c743" />
 
 ---
 
@@ -864,6 +864,76 @@ Attackers sometimes create misleading artifacts to cover tracks or explain activ
     | where FileName contains "support"
     | project TimeGenerated, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
 
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+
+### 🚩 Flag 14 – Autorun Fallback Persistence
+**🎯 Objective**
+Spot lightweight autorun entries as backup persistence.
+
+**📌 Finding**
+RemoteAssistUpdater
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Host             | gab-intern-vm             |
+| Timestamp        | (insert timestamp)        |
+| Process          | (insert process)          |
+| Command          | (insert command)          |
+
+**💡 Why it matters**
+Malware can add autorun entries to maintain persistence. MITRE ATT&CK **T1547 – Boot or Logon Autostart Execution**.
+
+**🔧 KQL Query Used**
+    DeviceRegistryEvents
+    | where RegistryKey contains "Run" or RegistryKey contains "Startup"
+    | where RegistryValueName contains "RemoteAssistUpdater"
+    | project TimeGenerated, DeviceName, RegistryKey, RegistryValueName, RegistryValueData
+
+**🛠️ Detection Recommendation**
+    DeviceRegistryEvents
+    | where RegistryValueName contains "RemoteAssistUpdater"
+    | project TimeGenerated, DeviceName, RegistryKey, RegistryValueName
+
+**🖼️ Screenshot**
+🖼️ Insert screenshot here
+
+
+### 🚩 Flag 14 – Autorun Fallback Persistence
+**🎯 Objective**
+Spot lightweight autorun entries as backup persistence.
+
+**📌 Finding**
+RemoteAssistUpdater
+
+**🔍 Evidence**
+
+| Field            | Value                     |
+|------------------|---------------------------|
+| Host             | gab-intern-vm             |
+| Timestamp        | (insert timestamp)        |
+| Process          | (insert process)          |
+| Command          | (insert command)          |
+
+**💡 Why it matters**
+Malware can add autorun entries to maintain persistence. MITRE ATT&CK **T1547 – Boot or Logon Autostart Execution**.
+
+**🔧 KQL Query Used**
+  ```
+  DeviceRegistryEvents
+    | where RegistryKey contains "Run" or RegistryKey contains "Startup"
+    | where RegistryValueName contains "RemoteAssistUpdater"
+    | project TimeGenerated, DeviceName, RegistryKey, RegistryValueName, RegistryValueData
+```
+**🛠️ Detection Recommendation**
+```
+    DeviceRegistryEvents
+    | where RegistryValueName contains "RemoteAssistUpdater"
+    | project TimeGenerated, DeviceName, RegistryKey, RegistryValueName
+```
 **🖼️ Screenshot**
 🖼️ Insert screenshot here
 
